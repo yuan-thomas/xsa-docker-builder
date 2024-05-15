@@ -1,0 +1,57 @@
+#!/bin/bash
+# bin/compile <build-dir> <cache-dir>
+
+BUILD_DIR=$1
+BIN_DIR=`dirname $0`
+BUILD_PACK_DIR=`dirname ${BIN_DIR}`
+
+. ${BUILD_PACK_DIR}/bin/load_env.sh
+
+cp ${BUILD_PACK_DIR}/bin/load_env.sh ${BUILD_DIR}
+
+echo "Building Docker Container..."
+cd ${BUILD_DIR}
+
+if [ -f $1/env.list ]
+	then echo 'env.list found.'
+	else echo > $1/env.list
+fi
+
+#Custom docker configuration in JSON format
+if [ -f $1/docker.container ]
+then
+	echo "Pulling Docker Image:" ${XSA_APPLICATION_DOCKER_IMAGE}
+	docker pull ${XSA_APPLICATION_DOCKER_IMAGE}
+fi
+
+#Standard Dockerfile
+if [ -f $1/Dockerfile ]
+then
+        echo "Building Dockerfile for application:" ${XSA_ORGANIZATION_NAME}/${XSA_SPACE_NAME}/${XSA_APPLICATION_NAME}
+        docker build -t ${XSA_ORGANIZATION_NAME}/${XSA_SPACE_NAME}/${XSA_APPLICATION_NAME} .
+fi
+
+#docker-compose
+#Mandatory enviroment variables: PORT
+if [ -f $1/docker-compose.yml ]
+then
+        echo "docker-compose building for application:" ${XSA_ORGANIZATION_NAME}/${XSA_SPACE_NAME}/${XSA_APPLICATION_NAME}
+
+	#A dummy PORT value is set to allow build to pass
+	export PORT=8888
+
+	#SAP HANA included Python 3.7 is very limited and will crash docker-compose, so unpoint env variables from it.
+        unset PYTHONHOME ; unset PYTHONPATH
+	docker-compose build
+fi
+
+#If NodeJS XSUAA facade is required for authentication
+if [ -f $1/xs-app.json ]
+then
+	env
+	echo "Requiring NodeJS XSUAA facade..."
+	cp $BUILD_PACK_DIR/bin/server.js .
+	cp $BUILD_PACK_DIR/bin/package.json .
+	cp $BUILD_PACK_DIR/bin/xs-app.json .
+	$NODE_HOME/bin/npm install
+fi

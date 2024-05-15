@@ -1,0 +1,13 @@
+{
+	"authenticationMethod": "route",
+	"routes": [{
+		"source":"^/(.*)",
+		"destination":"docker",
+		"authenticationType":"xsuaa",
+		"csrfProtection":false,
+		"cacheControl":"public, max-age=1000, no-store, must-revalidate"
+	}],
+	"websockets": {
+		"enabled": true
+	}
+}

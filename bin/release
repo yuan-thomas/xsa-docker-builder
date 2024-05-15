@@ -1,0 +1,26 @@
+#!/bin/bash
+# bin/release
+
+. ./load_env.sh>/dev/null
+
+if [ -f docker.container ] || [ -f Dockerfile ] 
+then CMD='. ./load_env.sh ; env ; docker run --rm --init --memory=${MEMORY_LIMIT} -p 127.0.0.1:${PORT}:${XSA_APPLICATION_DOCKER_PORT} --env VCAP_SERVICES --env VCAP_APPLICATION --env-file env.list --name ${XSA_INSTANCE_ID} '${DOCKER_ARG}' ${XSA_APPLICATION_DOCKER_IMAGE} '${DOCKER_IMAGE_CMD}
+fi
+
+if [ -f docker-compose.yml ]
+then CMD='. ./load_env.sh ; unset PYTHONHOME ; unset PYTHONPATH ; env; docker-compose up --abort-on-container-exit'
+fi
+
+if [ -f xs-app.json ]
+then CMD='. ./load_env.sh ; env ; '${NODE_HOME}'/bin/npm start --scripts-prepend-node-path'
+fi
+
+cat <<EOF
+---
+config_vars:
+addons:
+default_process_types:
+  web: $CMD
+
+
+EOF
